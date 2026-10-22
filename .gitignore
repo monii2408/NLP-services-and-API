@@ -1,0 +1,26 @@
+# Secrets: never commit tokens
+.env
+.env.*
+!.env.example
+
+# Model weights and datasets: share via release or shared folder
+models/
+checkpoints/
+data/
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+# Training and inference (CPU-only serving)
+torch>=2.2
+transformers>=4.40
+datasets>=2.18
+evaluate>=0.4
+accelerate>=0.27
+numpy>=1.26
+
+# Service
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
