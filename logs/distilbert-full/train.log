@@ -1,0 +1,213 @@
+2026-10-24 23:28:11,156 INFO train: Device: cuda (NVIDIA GeForce RTX 4070 Laptop GPU), bf16=True
+2026-10-24 23:28:11,418 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-24 23:28:15,966 INFO train: Train examples: 130319 (43498 unanswerable) of 130319
+2026-10-24 23:28:16,135 INFO train: Validation examples: 11873 (5945 unanswerable) of 11873
+2026-10-24 23:28:16,306 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-24 23:28:16,316 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.20.2",
+  "vocab_size": 30522
+}
+
+2026-10-24 23:28:55,565 INFO train: Train windows: 131754, validation windows: 12134
+2026-10-24 23:28:56,826 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-24 23:28:56,827 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.20.2",
+  "vocab_size": 30522
+}
+
+2026-10-24 23:28:56,850 INFO transformers.modeling_utils: loading weights file model.safetensors from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\model.safetensors
+2026-10-24 23:28:56,851 INFO transformers.modeling_utils: Since the `dtype` attribute can't be found in model's config object, will use dtype=torch.float32 as derived from model's weights
+2026-10-24 23:28:57,119 WARNING transformers.modeling_utils: [1mDistilBertForQuestionAnswering LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_transform.bias    | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+vocab_projector.bias    | UNEXPECTED | 
+vocab_layer_norm.bias   | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+qa_outputs.weight       | MISSING    | 
+qa_outputs.bias         | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+2026-10-24 23:28:57,120 INFO train: Model distilbert-base-uncased, 66364418 parameters
+2026-10-24 23:28:57,120 INFO transformers.training_args: PyTorch: setting up devices
+2026-10-24 23:28:57,977 INFO transformers.trainer: The following columns in the Training set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:28:57,985 INFO transformers.trainer: ***** Running training *****
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Num examples = 131,754
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Num Epochs = 2
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Num update steps per epoch = 8,235
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Instantaneous batch size per device = 16
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Gradient Accumulation steps = 1
+2026-10-24 23:28:57,985 INFO transformers.trainer:   Total optimization steps = 16,470
+2026-10-24 23:28:57,986 INFO transformers.trainer:   Number of trainable parameters = 66,364,418
+2026-10-24 23:30:19,798 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:30:19,801 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:30:19,801 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:30:19,801 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:31:55,975 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:31:55,978 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:31:55,978 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:31:55,978 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:33:31,854 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:33:31,857 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:33:31,857 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:33:31,857 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:35:09,320 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:35:09,324 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:35:09,324 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:35:09,324 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:36:47,356 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:36:47,361 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:36:47,361 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:36:47,361 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:38:24,104 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:38:24,108 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:38:24,108 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:38:24,109 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:39:59,134 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:39:59,138 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:39:59,138 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:39:59,138 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:41:34,374 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:41:34,378 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:41:34,378 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:41:34,378 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:42:08,288 INFO transformers.trainer: Saving model checkpoint to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-8235
+2026-10-24 23:42:08,291 INFO transformers.configuration_utils: Configuration saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-8235\config.json
+2026-10-24 23:42:08,567 INFO transformers.modeling_utils: Model weights saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-8235\model.safetensors
+2026-10-24 23:42:08,570 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-8235\tokenizer_config.json
+2026-10-24 23:43:10,950 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:43:10,955 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:43:10,955 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:43:10,955 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:44:47,426 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:44:47,430 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:44:47,430 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:44:47,430 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:46:23,638 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:46:23,642 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:46:23,642 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:46:23,642 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:47:58,290 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:47:58,293 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:47:58,293 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:47:58,293 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:49:34,886 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:49:34,890 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:49:34,891 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:49:34,891 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:51:13,869 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:51:13,876 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:51:13,877 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:51:13,877 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:52:50,071 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:52:50,075 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:52:50,075 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:52:50,075 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:54:25,190 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:54:25,194 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:54:25,194 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:54:25,194 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:55:17,440 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:55:17,443 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:55:17,443 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:55:17,443 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:55:32,211 INFO transformers.trainer: Saving model checkpoint to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-16470
+2026-10-24 23:55:32,214 INFO transformers.configuration_utils: Configuration saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-16470\config.json
+2026-10-24 23:55:32,460 INFO transformers.modeling_utils: Model weights saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-16470\model.safetensors
+2026-10-24 23:55:32,462 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\distilbert-full\checkpoint-16470\tokenizer_config.json
+2026-10-24 23:55:33,288 INFO transformers.trainer: 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+2026-10-24 23:55:33,290 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:55:33,294 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 23:55:33,294 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:55:33,294 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:55:47,948 INFO train: Training done in 26.6 min; final eval loss 1.3037
+2026-10-24 23:55:47,949 INFO transformers.trainer: The following columns in the test set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 23:55:47,954 INFO transformers.trainer: 
+***** Running Prediction *****
+2026-10-24 23:55:47,954 INFO transformers.trainer:   Num examples = 12134
+2026-10-24 23:55:47,954 INFO transformers.trainer:   Batch size = 64
+2026-10-24 23:56:10,468 INFO train: Validation metrics (threshold 0): {
+  "exact": 63.61492461888319,
+  "f1": 67.74364451266023,
+  "total": 11873,
+  "HasAns_exact": 62.65182186234818,
+  "HasAns_f1": 70.92110177105513,
+  "HasAns_total": 5928,
+  "NoAns_exact": 64.57527333894029,
+  "NoAns_f1": 64.57527333894029,
+  "NoAns_total": 5945
+}
+2026-10-24 23:56:10,470 INFO transformers.trainer: Saving model checkpoint to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full
+2026-10-24 23:56:10,472 INFO transformers.configuration_utils: Configuration saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full\config.json
+2026-10-24 23:56:10,830 INFO transformers.modeling_utils: Model weights saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full\model.safetensors
+2026-10-24 23:56:10,834 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full\tokenizer_config.json
+2026-10-24 23:56:10,844 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full\tokenizer_config.json
+2026-10-24 23:56:13,143 INFO train: Model saved to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\distilbert-full; logs saved to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\logs\distilbert-full

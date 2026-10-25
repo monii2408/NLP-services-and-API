@@ -1,10 +1,10 @@
 # Training and inference (CPU-only serving)
 torch>=2.2
-transformers>=4.40
+transformers>=5.0  # TrainingArguments(warmup_steps=<ratio>) and processing_class
 datasets>=2.18
-evaluate>=0.4
 accelerate>=0.27
 numpy>=1.26
+matplotlib>=3.8  # loss curves
 
 # Service
 fastapi>=0.110
