@@ -45,9 +45,17 @@ INSTRUCTIONS (delete this block in your submission)
 
 ## 3. No-answer threshold
 
-- How your service decides to return `null` (which scores are compared).
-- How you chose the threshold value, and the final value.
-- What happens to your results if the threshold is too low or too high.
+- **Decision rule.** For each window of the context the model gives start and end logits. The no-answer score of a window is `start_logit[CLS] + end_logit[CLS]`; the service keeps the minimum over all windows as `null_logit`. The span score is `start_logit[s] + end_logit[e]` for any span of at most 30 tokens inside the context, and the best one over all windows is `span_logit`. The service returns `null` when `null_logit - span_logit > threshold`. These are raw logits; the `score` field of the response is a separate probability.
+- **How the value was chosen.** We ran the fine-tuned model once over the full SQuAD 2.0 validation set (11,873 questions: 5,928 answerable, 5,945 unanswerable) and swept the threshold from -8 to +8 in steps of 0.05 (`evaluation/evaluate_model.py`, results in `evaluation/threshold_sweep.json`). The hidden test set is about 25% unanswerable, while validation is about 50%, so we maximized `0.75 * HasAns F1 + 0.25 * NoAns accuracy` instead of the plain F1. The maximum is 71.3 at +2.5, and the curve is flat between +1.5 and +3.0 (within 0.3 points). **Final value: +2.0** (`QA_NULL_THRESHOLD`), the middle of that flat region, which also stays within 0.3 points of the best at a 30% unanswerable share.
+
+| Threshold | HasAns F1 | NoAns accuracy | F1 (all) | Weighted (25% NoAns) |
+|---|---|---|---|---|
+| -2.0 | 61.4 | 75.5 | 68.4 | 64.9 |
+| 0.0 | 71.3 | 64.5 | 67.9 | 69.6 |
+| **+2.0** | 77.5 | 51.6 | 64.5 | 71.0 |
+| +5.0 | 82.0 | 33.1 | 57.5 | 69.7 |
+
+- **Too low or too high.** A low threshold makes the service answer `null` too often: at -2.0 it loses 16 points of HasAns F1 compared with +2.0. A high threshold makes it always answer: at +8.0 NoAns accuracy falls to 18.1%, so almost every unanswerable item fails. Validation is Wikipedia text and the hidden set is written by the instructor, so the best value may shift; on the public sample, `sample-04` (unanswerable) has a gap of -1.06 and is answered at any threshold above -1.06, and lowering the threshold enough to catch it would cost about 11 points of HasAns F1.
 
 ## 4. Serving architecture
 
