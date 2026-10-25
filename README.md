@@ -50,7 +50,15 @@ python training/train.py --run_name distilbert-full
 
 ## Run (local)
 
+The service loads the model from `models/distilbert-full/`. Download `distilbert-squad2-full.zip` from the
+`model-v1` release and unzip it into `models/`.
+
 ```bash
 export QA_API_TOKEN=...            # never write the value in a file tracked by git
+export QA_TEAM=team-XX             # team name registered with the instructor, no spaces; /info returns it
 uvicorn service.app:app --host 0.0.0.0 --port 8000
 ```
+
+`/health` answers 503 `{"status": "loading"}` while the model loads, and stays 503 if it cannot load
+(for example when `QA_TEAM` is missing); the reason is printed in the console.
+Optional variables: `QA_MODEL_DIR` (model folder) and `QA_NULL_THRESHOLD` (no-answer threshold, default 2.0).

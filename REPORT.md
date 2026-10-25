@@ -51,18 +51,20 @@ INSTRUCTIONS (delete this block in your submission)
 
 ## 4. Serving architecture
 
-- **Framework and server** (e.g. FastAPI + uvicorn), number of workers.
-- **Model loading:** when and where the model is loaded.
-- **Request flow:** from the incoming `/predict` request to the returned span, including how long contexts are handled.
-- **Access control:** where the token is checked and where the token value comes from.
-- **Tunnel:** which tool you use and the command you run.
+- **Framework and server:** FastAPI served by uvicorn with a single worker process. The model lives in that process, `/predict` is a synchronous function that FastAPI runs in its thread pool, and inference runs on CPU in fp32.
+- **Model loading:** at startup, FastAPI's lifespan hook starts a background thread that loads the tokenizer and the model from `models/distilbert-full/` and builds the `/info` payload (the parameter count is computed from the loaded model, the team name comes from `QA_TEAM`). The model is assigned last, so `/health` answers 503 `{"status": "loading"}` until everything is ready and 200 afterwards (about 4 s on the development laptop).
+- **Request flow:** the body is validated with Pydantic (`id` 1-64 characters, `context` 1-5000, `question` 1-500, no extra fields); an invalid body gives 400 `bad_request`. The question and the context are tokenized together into windows of at most 384 tokens that overlap by 128 tokens, so long contexts become several windows. Each window goes through the model. We scan every start/end pair of up to 30 context tokens and keep the highest `start_logit + end_logit` over all windows. The character offsets given by the tokenizer produce `start` and `answer = context[start:end]`, so the answer is always a verbatim span of the context at the reported offset. If the no-answer evidence beats the best span by more than the threshold (section 3), the service returns `answer: null, start: null`. Unexpected exceptions become 500 `internal_error`.
+- **Access control:** a FastAPI dependency on `/info` and `/predict` reads `QA_API_TOKEN` from the environment on every request and compares the whole `Authorization` header with `Bearer <token>` using `secrets.compare_digest` (exact and case-sensitive). A missing, wrong or unset token gives 401 `{"error": "unauthorized"}`. `/health` has no dependency and stays public. The token is never written in code or committed.
+- **Tunnel:** *(Rafa: tool and exact command.)*
 - **How to run** from a clean machine (commands and environment variables):
 
 ```bash
-# example
+python -m venv .venv && source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-export QA_API_TOKEN=...
-uvicorn app:app --host 0.0.0.0 --port 8000
+# download distilbert-squad2-full.zip from the model-v1 release and unzip it into models/
+export QA_API_TOKEN=...      # PowerShell: $env:QA_API_TOKEN = "..."
+export QA_TEAM=team-XX
+uvicorn service.app:app --host 0.0.0.0 --port 8000
 ```
 
 ## 5. Results on the public sample set
