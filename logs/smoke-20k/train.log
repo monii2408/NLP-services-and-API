@@ -1,0 +1,149 @@
+2026-10-24 22:54:12,192 INFO train: Device: cuda (NVIDIA GeForce RTX 4070 Laptop GPU), bf16=True
+2026-10-24 22:54:12,542 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-24 22:54:16,570 INFO train: Train examples: 20000 (6676 unanswerable) of 130319
+2026-10-24 22:54:16,624 INFO train: Validation examples: 2000 (1001 unanswerable) of 11873
+2026-10-24 22:54:16,843 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-24 22:54:16,853 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.20.2",
+  "vocab_size": 30522
+}
+
+2026-10-24 22:54:24,057 INFO train: Train windows: 20268, validation windows: 2042
+2026-10-24 22:54:24,525 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-24 22:54:24,527 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.20.2",
+  "vocab_size": 30522
+}
+
+2026-10-24 22:54:24,554 INFO transformers.modeling_utils: loading weights file model.safetensors from cache at C:\Users\pepe7\.cache\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\model.safetensors
+2026-10-24 22:54:24,555 INFO transformers.modeling_utils: Since the `dtype` attribute can't be found in model's config object, will use dtype=torch.float32 as derived from model's weights
+2026-10-24 22:54:24,855 WARNING transformers.modeling_utils: [1mDistilBertForQuestionAnswering LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_projector.bias    | UNEXPECTED | 
+vocab_transform.bias    | UNEXPECTED | 
+vocab_layer_norm.bias   | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+qa_outputs.weight       | MISSING    | 
+qa_outputs.bias         | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+2026-10-24 22:54:24,856 INFO train: Model distilbert-base-uncased, 66364418 parameters
+2026-10-24 22:54:24,857 INFO transformers.training_args: PyTorch: setting up devices
+2026-10-24 22:54:25,368 INFO transformers.trainer: The following columns in the Training set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:54:25,376 INFO transformers.trainer: ***** Running training *****
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Num examples = 20,268
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Num Epochs = 1
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Num update steps per epoch = 1,267
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Instantaneous batch size per device = 16
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Total train batch size (w. parallel, distributed & accumulation) = 16
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Gradient Accumulation steps = 1
+2026-10-24 22:54:25,376 INFO transformers.trainer:   Total optimization steps = 1,267
+2026-10-24 22:54:25,377 INFO transformers.trainer:   Number of trainable parameters = 66,364,418
+2026-10-24 22:54:50,386 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:54:50,390 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:54:50,390 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:54:50,390 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:55:18,369 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:55:18,372 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:55:18,372 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:55:18,372 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:55:45,903 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:55:45,907 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:55:45,907 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:55:45,907 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:56:13,659 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:56:13,663 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:56:13,663 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:56:13,663 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:56:22,413 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:56:22,416 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:56:22,416 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:56:22,416 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:56:25,763 INFO transformers.trainer: Saving model checkpoint to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\smoke-20k\checkpoint-1267
+2026-10-24 22:56:25,768 INFO transformers.configuration_utils: Configuration saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\smoke-20k\checkpoint-1267\config.json
+2026-10-24 22:56:26,042 INFO transformers.modeling_utils: Model weights saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\smoke-20k\checkpoint-1267\model.safetensors
+2026-10-24 22:56:26,043 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\checkpoints\smoke-20k\checkpoint-1267\tokenizer_config.json
+2026-10-24 22:56:26,763 INFO transformers.trainer: 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+2026-10-24 22:56:26,765 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:56:26,769 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-24 22:56:26,769 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:56:26,769 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:56:30,137 INFO train: Training done in 2.0 min; final eval loss 1.6560
+2026-10-24 22:56:30,139 INFO transformers.trainer: The following columns in the test set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-24 22:56:30,142 INFO transformers.trainer: 
+***** Running Prediction *****
+2026-10-24 22:56:30,142 INFO transformers.trainer:   Num examples = 2042
+2026-10-24 22:56:30,142 INFO transformers.trainer:   Batch size = 64
+2026-10-24 22:56:34,851 INFO train: Validation metrics (threshold 0): {
+  "exact": 49.0,
+  "f1": 50.76831103837682,
+  "total": 2000,
+  "HasAns_exact": 36.23623623623624,
+  "HasAns_f1": 39.77639847522889,
+  "HasAns_total": 999,
+  "NoAns_exact": 61.738261738261734,
+  "NoAns_f1": 61.738261738261734,
+  "NoAns_total": 1001
+}
+2026-10-24 22:56:34,852 INFO transformers.trainer: Saving model checkpoint to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k
+2026-10-24 22:56:34,855 INFO transformers.configuration_utils: Configuration saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k\config.json
+2026-10-24 22:56:35,108 INFO transformers.modeling_utils: Model weights saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k\model.safetensors
+2026-10-24 22:56:35,109 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k\tokenizer_config.json
+2026-10-24 22:56:35,115 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k\tokenizer_config.json
+2026-10-24 22:56:36,307 INFO train: Model saved to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\models\smoke-20k; logs saved to C:\Users\pepe7\Documents\INGIA\NLP-services-and-API\logs\smoke-20k

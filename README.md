@@ -10,12 +10,12 @@ The written report is `REPORT.md`.
 
 | Folder | Owner | Contents |
 |---|---|---|
-| `training/` | Mauricio | Data preparation, fine-tuning script, loss curves |
-| `service/` | Montaño | FastAPI app implementing the contract, auth, long-context windows |
-| `evaluation/` | Mónica | EM/F1 evaluation, no-answer threshold, public sample checks |
+| `training/` | Montaño | Data preparation, fine-tuning script, loss curves |
+| `service/` | Mónica | FastAPI app implementing the contract, auth, long-context windows |
+| `evaluation/` | Mauricio | EM/F1 evaluation, no-answer threshold, public sample checks |
 | `deploy/` | Rafa | Tunnel setup, run scripts, latency measurements |
-| `tests/` | Mónica | Contract tests (the five curl checks as code) |
-| `logs/` | Mauricio | Training logs and loss curves (committed) |
+| `tests/` | Mauricio | Contract tests (the five curl checks as code) |
+| `logs/` | Montaño | Training logs and loss curves (committed) |
 
 Every member reviews the code of the other folders. Everyone must be able to explain all of it at Q&A.
 
@@ -29,6 +29,24 @@ pip install -r requirements.txt
 
 The access token is read from the environment variable `QA_API_TOKEN`. Copy `.env.example` only as a reference.
 Never commit the real token or the model weights.
+
+## Training
+
+Fine-tunes `distilbert-base-uncased` on SQuAD 2.0. Needs a GPU for a reasonable time (CPU works, slowly).
+Install a CUDA build of PyTorch first if `pip install -r requirements.txt` gave you the CPU one, e.g.
+`pip install torch --index-url https://download.pytorch.org/whl/cu128`.
+
+```bash
+# quick smoke test (a few minutes)
+python training/train.py --run_name smoke --train_samples 2000 --eval_samples 500 --epochs 1
+# full run (all of SQuAD 2.0 train, validated on the full SQuAD 2.0 dev set)
+python training/train.py --run_name distilbert-full
+```
+
+- Weights and `metadata.json` (model id, params, `max_seq_length`, `doc_stride` for `/info`) go to `models/<run_name>/` (not committed).
+- Logs go to `logs/<run_name>/` (committed): `train.log`, `config.json`, `log_history.json`, `loss.png`,
+  `metrics.json` (EM/F1 with no-answer threshold 0) and `val_score_diffs.json`
+  (best span score minus null score per validation id, input for tuning the threshold in `evaluation/`).
 
 ## Run (local)
 
