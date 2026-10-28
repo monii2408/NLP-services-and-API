@@ -1,6 +1,6 @@
 """Fine-tune a base encoder for extractive QA on SQuAD 2.0.
 
-Owner: Montaño.
+Owner: Mauricio.
 
 Pipeline:
 1. Load SQuAD 2.0 (Hugging Face `rajpurkar/squad_v2`) and optionally subsample the train split,
@@ -48,11 +48,12 @@ from transformers import (
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 logger = logging.getLogger("train")
+DEFAULT_BASE_CHECKPOINT = "distilbert-base-uncased"
 
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--model", default="distilbert-base-uncased", help="Base checkpoint (must NOT be fine-tuned on SQuAD).")
+    p.add_argument("--model", default=DEFAULT_BASE_CHECKPOINT, help="Base checkpoint (must NOT be fine-tuned on SQuAD).")
     p.add_argument("--run_name", default="distilbert-squad2")
     p.add_argument("--output_dir", default=None, help="Where to save the final model. Default: models/<run_name>.")
     p.add_argument("--max_seq_length", type=int, default=384)
@@ -100,6 +101,9 @@ def stratified_subsample(ds, n, seed):
     impossible_idx = np.flatnonzero(is_impossible)
     possible_idx = np.flatnonzero(~is_impossible)
     n_impossible = round(n * len(impossible_idx) / len(ds))
+    # Keep both classes represented whenever the requested sample can do so.
+    if n >= 2 and len(impossible_idx) and len(possible_idx):
+        n_impossible = min(max(n_impossible, 1), n - 1)
     picked = np.concatenate([
         rng.choice(impossible_idx, n_impossible, replace=False),
         rng.choice(possible_idx, n - n_impossible, replace=False),
@@ -222,7 +226,7 @@ def postprocess_predictions(examples, features, start_logits, end_logits, n_best
 def normalize_answer(text):
     """Official SQuAD normalization: lowercase, drop punctuation, articles and extra whitespace."""
     text = "".join(ch for ch in text.lower() if ch not in set(string.punctuation))
-    text = re.sub(r"(a|an|the)", " ", text)
+    text = re.sub(r"\b(a|an|the)\b", " ", text)
     return " ".join(text.split())
 
 
@@ -287,6 +291,14 @@ def plot_loss(log_history, path: Path):
 
 def main():
     args = parse_args()
+    if args.max_seq_length < 3:
+        raise SystemExit("--max_seq_length must be at least 3 tokens.")
+    if not 0 <= args.doc_stride < args.max_seq_length:
+        raise SystemExit("--doc_stride must be non-negative and smaller than --max_seq_length.")
+    if args.train_samples is not None and args.train_samples < 1:
+        raise SystemExit("--train_samples must be positive when provided.")
+    if args.eval_samples is not None and args.eval_samples < 1:
+        raise SystemExit("--eval_samples must be positive when provided.")
     log_dir = REPO_ROOT / "logs" / args.run_name
     output_dir = Path(args.output_dir) if args.output_dir else REPO_ROOT / "models" / args.run_name
     setup_logging(log_dir)

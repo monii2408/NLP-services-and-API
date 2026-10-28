@@ -1,0 +1,14 @@
+{
+  "final_eval_loss": 4.747905731201172,
+  "threshold_0": {
+    "exact": 50.0,
+    "f1": 50.0,
+    "total": 100,
+    "HasAns_exact": 0.0,
+    "HasAns_f1": 0.0,
+    "HasAns_total": 50,
+    "NoAns_exact": 100.0,
+    "NoAns_f1": 100.0,
+    "NoAns_total": 50
+  }
+}

@@ -10,12 +10,12 @@ The written report is `REPORT.md`.
 
 | Folder | Owner | Contents |
 |---|---|---|
-| `training/` | Montaño | Data preparation, fine-tuning script, loss curves |
+| `training/` | Mauricio | Data preparation, fine-tuning script, loss curves |
 | `service/` | Mónica | FastAPI app implementing the contract, auth, long-context windows |
 | `evaluation/` | Mauricio | EM/F1 evaluation, no-answer threshold, public sample checks |
 | `deploy/` | Rafa | Tunnel setup, run scripts, latency measurements |
 | `tests/` | Mauricio | Contract tests (the five curl checks as code) |
-| `logs/` | Montaño | Training logs and loss curves (committed) |
+| `logs/` | Mauricio | Training logs and loss curves (committed) |
 
 Every member reviews the code of the other folders. Everyone must be able to explain all of it at Q&A.
 

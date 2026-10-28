@@ -1,0 +1,139 @@
+2026-10-27 21:22:40,771 INFO train: Device: cpu (AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD), bf16=False
+2026-10-27 21:22:41,208 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-27 21:22:53,167 INFO train: Train examples: 200 (67 unanswerable) of 130319
+2026-10-27 21:22:53,179 INFO train: Validation examples: 100 (50 unanswerable) of 11873
+2026-10-27 21:22:53,689 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\.tmp-py\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-27 21:22:53,699 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.21.0",
+  "vocab_size": 30522
+}
+
+2026-10-27 21:22:56,192 INFO train: Train windows: 201, validation windows: 102
+2026-10-27 21:22:56,403 INFO transformers.configuration_utils: loading configuration file config.json from cache at C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\.tmp-py\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\config.json
+2026-10-27 21:22:56,404 INFO transformers.configuration_utils: Model config DistilBertConfig {
+  "activation": "gelu",
+  "architectures": [
+    "DistilBertForMaskedLM"
+  ],
+  "attention_dropout": 0.1,
+  "bos_token_id": null,
+  "dim": 768,
+  "dropout": 0.1,
+  "eos_token_id": null,
+  "hidden_dim": 3072,
+  "initializer_range": 0.02,
+  "max_position_embeddings": 512,
+  "model_type": "distilbert",
+  "n_heads": 12,
+  "n_layers": 6,
+  "pad_token_id": 0,
+  "qa_dropout": 0.1,
+  "seq_classif_dropout": 0.2,
+  "sinusoidal_pos_embds": false,
+  "tie_weights_": true,
+  "tie_word_embeddings": true,
+  "transformers_version": "5.21.0",
+  "vocab_size": 30522
+}
+
+2026-10-27 21:23:09,088 INFO transformers.modeling_utils: loading weights file model.safetensors from cache at C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\.tmp-py\huggingface\hub\models--distilbert-base-uncased\snapshots\12040accade4e8a0f71eabdb258fecc2e7e948be\model.safetensors
+2026-10-27 21:23:09,092 INFO transformers.modeling_utils: Since the `dtype` attribute can't be found in model's config object, will use dtype=torch.float32 as derived from model's weights
+2026-10-27 21:23:09,479 WARNING transformers.modeling_utils: [1mDistilBertForQuestionAnswering LOAD REPORT[0m from: distilbert-base-uncased
+Key                     | Status     | 
+------------------------+------------+-
+vocab_layer_norm.bias   | UNEXPECTED | 
+vocab_transform.bias    | UNEXPECTED | 
+vocab_transform.weight  | UNEXPECTED | 
+vocab_layer_norm.weight | UNEXPECTED | 
+vocab_projector.bias    | UNEXPECTED | 
+qa_outputs.bias         | MISSING    | 
+qa_outputs.weight       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+2026-10-27 21:23:09,480 INFO train: Model distilbert-base-uncased, 66364418 parameters
+2026-10-27 21:23:09,481 INFO transformers.training_args: PyTorch: setting up devices
+2026-10-27 21:23:09,692 INFO transformers.trainer: The following columns in the Training set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:23:09,711 INFO transformers.trainer: ***** Running training *****
+2026-10-27 21:23:09,712 INFO transformers.trainer:   Num examples = 201
+2026-10-27 21:23:09,712 INFO transformers.trainer:   Num Epochs = 1
+2026-10-27 21:23:09,712 INFO transformers.trainer:   Num update steps per epoch = 26
+2026-10-27 21:23:09,712 INFO transformers.trainer:   Instantaneous batch size per device = 8
+2026-10-27 21:23:09,713 INFO transformers.trainer:   Total train batch size (w. parallel, distributed & accumulation) = 8
+2026-10-27 21:23:09,713 INFO transformers.trainer:   Gradient Accumulation steps = 1
+2026-10-27 21:23:09,713 INFO transformers.trainer:   Total optimization steps = 26
+2026-10-27 21:23:09,714 INFO transformers.trainer:   Number of trainable parameters = 66,364,418
+2026-10-27 21:23:50,612 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:23:50,620 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-27 21:23:50,621 INFO transformers.trainer:   Num examples = 102
+2026-10-27 21:23:50,621 INFO transformers.trainer:   Batch size = 16
+2026-10-27 21:24:40,077 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:24:40,085 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-27 21:24:40,085 INFO transformers.trainer:   Num examples = 102
+2026-10-27 21:24:40,086 INFO transformers.trainer:   Batch size = 16
+2026-10-27 21:25:13,254 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:25:13,263 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-27 21:25:13,264 INFO transformers.trainer:   Num examples = 102
+2026-10-27 21:25:13,264 INFO transformers.trainer:   Batch size = 16
+2026-10-27 21:25:24,088 INFO transformers.trainer: Saving model checkpoint to C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\checkpoints\mauricio-squad2-200\checkpoint-26
+2026-10-27 21:25:24,101 INFO transformers.configuration_utils: Configuration saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\checkpoints\mauricio-squad2-200\checkpoint-26\config.json
+2026-10-27 21:25:24,298 INFO transformers.modeling_utils: Model weights saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\checkpoints\mauricio-squad2-200\checkpoint-26\model.safetensors
+2026-10-27 21:25:24,304 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\checkpoints\mauricio-squad2-200\checkpoint-26\tokenizer_config.json
+2026-10-27 21:25:24,954 INFO transformers.trainer: 
+
+Training completed. Do not forget to share your model on huggingface.co/models =)
+
+
+2026-10-27 21:25:24,958 INFO transformers.trainer: The following columns in the Evaluation set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:25:24,966 INFO transformers.trainer: 
+***** Running Evaluation *****
+2026-10-27 21:25:24,967 INFO transformers.trainer:   Num examples = 102
+2026-10-27 21:25:24,967 INFO transformers.trainer:   Batch size = 16
+2026-10-27 21:25:35,939 INFO train: Training done in 2.3 min; final eval loss 4.7479
+2026-10-27 21:25:35,941 INFO transformers.trainer: The following columns in the test set don't have a corresponding argument in `DistilBertForQuestionAnswering.forward` and have been ignored: token_type_ids. If token_type_ids are not expected by `DistilBertForQuestionAnswering.forward`,  you can safely ignore this message.
+2026-10-27 21:25:35,950 INFO transformers.trainer: 
+***** Running Prediction *****
+2026-10-27 21:25:35,950 INFO transformers.trainer:   Num examples = 102
+2026-10-27 21:25:35,951 INFO transformers.trainer:   Batch size = 16
+2026-10-27 21:25:47,120 INFO train: Validation metrics (threshold 0): {
+  "exact": 50.0,
+  "f1": 50.0,
+  "total": 100,
+  "HasAns_exact": 0.0,
+  "HasAns_f1": 0.0,
+  "HasAns_total": 50,
+  "NoAns_exact": 100.0,
+  "NoAns_f1": 100.0,
+  "NoAns_total": 50
+}
+2026-10-27 21:25:47,124 INFO transformers.trainer: Saving model checkpoint to C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200
+2026-10-27 21:25:47,132 INFO transformers.configuration_utils: Configuration saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200\config.json
+2026-10-27 21:25:47,321 INFO transformers.modeling_utils: Model weights saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200\model.safetensors
+2026-10-27 21:25:47,325 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200\tokenizer_config.json
+2026-10-27 21:25:47,335 INFO transformers.tokenization_utils_base: tokenizer config file saved in C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200\tokenizer_config.json
+2026-10-27 21:25:49,999 INFO train: Model saved to C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\models\mauricio-squad2-200; logs saved to C:\Users\User\Desktop\Tarea3IA\NLP-services-and-API\logs\mauricio-squad2-200

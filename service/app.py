@@ -10,6 +10,7 @@ Owner: Mónica. TODO:
 """
 
 import logging
+import json
 import os
 import secrets
 import threading
@@ -41,19 +42,43 @@ _model = None
 _info: dict | None = None
 
 
-def _load_model() -> None:
-    global _tokenizer, _model, _info
+def _read_training_metadata(model_dir: Path) -> dict:
+    """Load and validate the settings produced beside the trained weights."""
+    metadata_path = model_dir / "metadata.json"
     try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"unable to read {metadata_path}") from exc
+
+    model = metadata.get("model")
+    max_seq_length = metadata.get("max_seq_length")
+    doc_stride = metadata.get("doc_stride")
+    if not isinstance(model, str) or not model:
+        raise RuntimeError("metadata.json has no valid base model id")
+    if isinstance(max_seq_length, bool) or not isinstance(max_seq_length, int) or max_seq_length < 3:
+        raise RuntimeError("metadata.json has no valid max_seq_length")
+    if isinstance(doc_stride, bool) or not isinstance(doc_stride, int) or not 0 <= doc_stride < max_seq_length:
+        raise RuntimeError("metadata.json has no valid doc_stride")
+    return {"model": model, "max_seq_length": max_seq_length, "doc_stride": doc_stride}
+
+
+def _load_model() -> None:
+    global _tokenizer, _model, _info, BASE_MODEL, MAX_SEQ_LENGTH, DOC_STRIDE
+    try:
+        metadata = _read_training_metadata(MODEL_DIR)
         tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
         model = AutoModelForQuestionAnswering.from_pretrained(MODEL_DIR)
         model.eval()
         _info = {
             "team": os.environ["QA_TEAM"],
-            "model": BASE_MODEL,
+            "model": metadata["model"],
             "params": sum(p.numel() for p in model.parameters()),
-            "max_seq_length": MAX_SEQ_LENGTH,
-            "doc_stride": DOC_STRIDE,
+            "max_seq_length": metadata["max_seq_length"],
+            "doc_stride": metadata["doc_stride"],
         }
+        BASE_MODEL = metadata["model"]
+        MAX_SEQ_LENGTH = metadata["max_seq_length"]
+        DOC_STRIDE = metadata["doc_stride"]
         # Assign the model last, so /health only turns "ok" once everything is set.
         _tokenizer, _model = tokenizer, model
         logger.info("model loaded from %s", MODEL_DIR)
