@@ -24,24 +24,30 @@ INSTRUCTIONS (delete this block in your submission)
 
 ## 1. Model choice and justification
 
-- **Base checkpoint** (exact Hugging Face id):
-- **Alternatives considered** (at least one) and why you did not choose them:
-- **Trade-off:** how the choice balances quality, model size, and CPU-only serving on your laptop.
+- **Base checkpoint** (exact Hugging Face id): `distilbert-base-uncased` (66,364,418 parameters), not previously fine-tuned on SQuAD; we fine-tuned it ourselves on SQuAD 2.0.
+- **Alternatives considered** (at least one) and why you did not choose them: *(TODO team: name the alternative(s) we really discussed, e.g. `bert-base-uncased`, and the reason.)*
+- **Trade-off:** DistilBERT has about 40% fewer parameters than BERT-base, so the 254 MB model loads in about 4 s and runs on CPU in fp32 without a GPU. We accept a lower F1 (67.7 on SQuAD 2.0 dev, section 2) in exchange for a service that fits a laptop.
 
 ## 2. Training
 
 | Item | Value |
 |---|---|
-| Training data (full SQuAD 2.0 train or subset; how many examples) | |
-| Validation data (what you validated on, how many examples) | |
-| Epochs | |
-| Learning rate and schedule (warmup?) | |
-| Batch size | |
-| `max_seq_length` / `doc_stride` | |
-| Hardware and training time | |
+| Training data (full SQuAD 2.0 train or subset; how many examples) | Full SQuAD 2.0 train: 130,319 examples (43,498 unanswerable), 131,754 windows |
+| Validation data (what you validated on, how many examples) | Full SQuAD 2.0 dev: 11,873 examples (5,945 unanswerable), 12,134 windows |
+| Epochs | 2 (16,470 steps) |
+| Learning rate and schedule (warmup?) | 3e-5, linear decay, warmup ratio 0.1, weight decay 0.01 |
+| Batch size | 16 (eval 64) |
+| `max_seq_length` / `doc_stride` | 384 / 128 |
+| Hardware and training time | NVIDIA GeForce RTX 4070 Laptop GPU, bf16, 26.6 minutes |
 
-- **Loss curve:** link to the file in the repository (e.g. `logs/loss.png`).
-- **Validation results:** EM and F1 on your validation data, separately for answerable and unanswerable questions if you have them.
+- **Loss curve:** [`logs/distilbert-full/loss.png`](logs/distilbert-full/loss.png) (final validation loss 1.304; full log in `logs/distilbert-full/train.log`).
+- **Validation results** (no-answer threshold 0, from `logs/distilbert-full/metrics.json`):
+
+| Subset | Examples | EM | F1 |
+|---|---|---|---|
+| All | 11,873 | 63.61 | 67.74 |
+| Answerable | 5,928 | 62.65 | 70.92 |
+| Unanswerable | 5,945 | 64.58 | 64.58 |
 
 ## 3. No-answer threshold
 
@@ -83,8 +89,8 @@ The service gets 4 of 5 right, including `sample-05`, whose 3,171-character cont
 
 | Item | Value |
 |---|---|
-| Parameters | |
-| Size on disk | |
+| Parameters | 66,364,418 |
+| Size on disk | 254 MB (`models/distilbert-full/`) |
 | Mean latency per `/predict` request on your laptop (CPU) | |
 | Laptop CPU and RAM | |
 
