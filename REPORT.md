@@ -15,12 +15,12 @@ INSTRUCTIONS (delete this block in your submission)
 
 | Field | Value |
 |---|---|
-| Team id | `team-XX` |
-| Members | Name 1, Name 2, Name 3, Name 4, (Name 5) |
-| Repository URL | |
-| `submission` commit hash | |
-| Public service URL used at the dry run | |
-| AI tools used (which, and for what) | |
+| Team id | `team-XX` *(TODO: the id given in the course)* |
+| Members | Diego Montaño, Mónica Alvarenga, Mauricio Chávez, Rafa *(TODO: surname)* |
+| Repository URL | https://github.com/monii2408/NLP-services-and-API |
+| `submission` commit hash | *(TODO: fill in after tagging `submission`)* |
+| Public service URL used at the dry run | *(TODO: Rafa, after the dry run)* |
+| AI tools used (which, and for what) | Claude Code (Anthropic): implementation of the FastAPI service, `evaluation/evaluate_model.py` and the threshold sweep, and a first draft of this report, all reviewed by the team. *(TODO: each member adds the tools they used.)* |
 
 ## 1. Model choice and justification
 
@@ -51,9 +51,19 @@ INSTRUCTIONS (delete this block in your submission)
 
 ## 3. No-answer threshold
 
-- How your service decides to return `null` (which scores are compared).
-- How you chose the threshold value, and the final value.
-- What happens to your results if the threshold is too low or too high.
+- **Decision rule.** For every question the service finds the best span (highest `start_logit + end_logit` inside the context) over all windows, and takes the no-answer score from the `[CLS]` token (`null_logit = start_logit[CLS] + end_logit[CLS]`, best window). It returns `null` when `null_logit - best_span_logit > threshold`; a higher threshold makes the service answer more often.
+- **How we chose it.** `evaluation/evaluate_model.py` runs the model once over the full SQuAD 2.0 validation set (11,873 questions) with the same scoring code as the service, stores the gap `null_logit - best_span_logit` of each question and scores 321 thresholds from -8 to 8 in steps of 0.05 ([`evaluation/threshold_sweep.json`](evaluation/threshold_sweep.json)). Validation has about 50% unanswerable questions, but the hidden test set has about 25%, so we select by a weighted F1 that counts unanswerable questions with weight 0.25. The sweep peaks at 2.5 (weighted F1 71.29, plateau 2.45-2.8); the service runs with **2.0** (`QA_NULL_THRESHOLD`, default in `service/app.py`), whose weighted F1 is 71.03, 0.25 points lower. Threshold 0 gives 69.60.
+- **Too low or too high** (validation, from the sweep):
+
+| Threshold | Answerable EM | Unanswerable accuracy | Weighted F1 |
+|---|---|---|---|
+| -8 (almost always `null`) | 19.7 | 93.8 | 39.3 |
+| 0 | 64.6 | 64.5 | 69.6 |
+| **2.0 (service)** | 69.9 | 51.6 | 71.0 |
+| 2.5 (sweep optimum) | 70.8 | 49.0 | 71.3 |
+| 4 | 72.9 | 39.5 | 70.8 |
+
+A threshold that is too low discards correct answers: at -8 the service says `null` for four of five answerable questions. A threshold that is too high answers every question, so unanswerable questions are wrong (at 4 only 39.5% are detected). This is also why `sample-04` stays wrong: its gap is -1.06, and only a threshold below -1.06 would return `null`, which costs about 8 points of answerable EM compared with threshold 0 (56.1 at -2).
 
 ## 4. Serving architecture
 
@@ -91,8 +101,8 @@ The service gets 4 of 5 right, including `sample-05`, whose 3,171-character cont
 |---|---|
 | Parameters | 66,364,418 |
 | Size on disk | 254 MB (`models/distilbert-full/`) |
-| Mean latency per `/predict` request on your laptop (CPU) | |
-| Laptop CPU and RAM | |
+| Mean latency per `/predict` request on your laptop (CPU) | 118 ms mean, 58 ms median, 398 ms max (5 public samples × 10 requests after one warm-up, over `127.0.0.1`); about 60-100 ms for the four short samples and 305 ms for `sample-05`, which needs several windows |
+| Laptop CPU and RAM | AMD Ryzen 5 8645HS (6 cores, 12 threads), 23.3 GB RAM |
 
 ## 7. Problems encountered and how you fixed them
 
