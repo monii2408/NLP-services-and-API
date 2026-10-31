@@ -108,6 +108,10 @@ How could a decoder (GPT-style) or an encoder–decoder architecture address spe
 
 For each point: the problem, how the alternative architecture would handle it, and what it would cost (latency, model size, evaluation).
 
+1. **Unanswerable questions with a similar-looking fact (`sample-04`).** Our encoder scores spans independently of the question's entity, so it returned `3` for BERT-base when the paragraph only describes GPT-3 175B. An encoder–decoder (e.g. T5) or a decoder (GPT-style) reads the question and the context in one generation pass and can output "unanswerable" as text, which lets it compare the entities instead of thresholding a logit difference. **Cost:** a model several times larger than our 66M-parameter DistilBERT, slower CPU generation token by token, and a risk of invented answers, so we would have to check that each answer is a substring of the context.
+2. **Answers that are not one contiguous span (section 9).** Our service can only return one span of at most 30 tokens, so a yes/no answer or an answer built from two sentences is impossible. A generative model can write the answer freely. **Cost:** the contract requires `start` as a character offset into the context; a free-text answer has no reliable offset, so we would need an extra step to find the text in the context, and EM/F1 would no longer measure exactly what the model is asked to do.
+3. **Long contexts (`sample-05`, 3,171 characters).** We split the context into 384-token windows with a 128-token overlap and keep the best-scoring span, so the model never sees the whole paragraph at once. A long-context decoder reads it in one pass and can use evidence from distant sentences. **Cost:** attention memory and latency grow with the context length, which is hard to afford on a CPU-only laptop, and for contexts of at most 5000 characters our windowed encoder already answers `sample-05` correctly.
+
 ## 9. Known limitations
 
 - **Short extractive answers only.** The service returns one contiguous span of at most 30 tokens. Yes/no answers, computed numbers or answers spread over several sentences cannot be produced; the model returns the closest span or `null`.
