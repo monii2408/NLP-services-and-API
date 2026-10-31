@@ -51,10 +51,10 @@ INSTRUCTIONS (delete this block in your submission)
 
 ## 4. Serving architecture
 
-- **Framework and server:** FastAPI served by uvicorn with a single worker process. The model lives in that process, `/predict` is a synchronous function that FastAPI runs in its thread pool, and inference runs on CPU in fp32.
-- **Model loading:** at startup, FastAPI's lifespan hook starts a background thread that loads the tokenizer and the model from `models/distilbert-full/` and builds the `/info` payload (the parameter count is computed from the loaded model, the team name comes from `QA_TEAM`). The model is assigned last, so `/health` answers 503 `{"status": "loading"}` until everything is ready and 200 afterwards (about 4 s on the development laptop).
-- **Request flow:** the body is validated with Pydantic (`id` 1-64 characters, `context` 1-5000, `question` 1-500, no extra fields); an invalid body gives 400 `bad_request`. The question and the context are tokenized together into windows of at most 384 tokens that overlap by 128 tokens, so long contexts become several windows. Each window goes through the model. We scan every start/end pair of up to 30 context tokens and keep the highest `start_logit + end_logit` over all windows. The character offsets given by the tokenizer produce `start` and `answer = context[start:end]`, so the answer is always a verbatim span of the context at the reported offset. If the no-answer evidence beats the best span by more than the threshold (section 3), the service returns `answer: null, start: null`. Unexpected exceptions become 500 `internal_error`.
-- **Access control:** a FastAPI dependency on `/info` and `/predict` reads `QA_API_TOKEN` from the environment on every request and compares the whole `Authorization` header with `Bearer <token>` using `secrets.compare_digest` (exact and case-sensitive). A missing, wrong or unset token gives 401 `{"error": "unauthorized"}`. `/health` has no dependency and stays public. The token is never written in code or committed.
+- **Framework and server:** FastAPI on uvicorn, one worker process. The model is loaded once in that process; `/predict` is a synchronous function that FastAPI runs in its thread pool, on CPU in fp32.
+- **Model loading:** a background thread started by FastAPI's lifespan hook loads the tokenizer and the model from `models/distilbert-full/`. The model is assigned last, so `/health` answers 503 `{"status": "loading"}` until it is ready (about 4 s on the development laptop) and 200 afterwards.
+- **Request flow:** Pydantic validates the body (`id` 1-64, `context` 1-5000 and `question` 1-500 characters, no extra fields; otherwise 400 `bad_request`). The question and the context are tokenized into windows of at most 384 tokens with a 128-token overlap, so a long context becomes several windows. In every window we scan the start/end pairs of up to 30 context tokens and keep the best `start_logit + end_logit`. The tokenizer's character offsets give `start` and `answer = context[start:end]`, so the answer is always a verbatim span at the reported offset. If the no-answer evidence beats the best span by more than the threshold (section 3), the answer is `null`.
+- **Access control:** a dependency on `/info` and `/predict` reads `QA_API_TOKEN` from the environment and compares the whole `Authorization` header with `Bearer <token>` using `secrets.compare_digest`. A missing, wrong or unset token gives 401 `{"error": "unauthorized"}`; `/health` stays public. The token is never in code or in git.
 - **Tunnel:** *(Rafa: tool and exact command.)*
 - **How to run** from a clean machine (commands and environment variables):
 
@@ -71,13 +71,13 @@ uvicorn service.app:app --host 0.0.0.0 --port 8000
 
 | Item | Expected | Your answer | `start` | Correct? |
 |---|---|---|---|---|
-| sample-01 | | | | |
-| sample-02 | | | | |
-| sample-03 | `null` | | | |
-| sample-04 | `null` | | | |
-| sample-05 | | | | |
+| sample-01 | `16` | `16` | 383 | Yes |
+| sample-02 | `3.5 days` | `3.5 days` | 437 | Yes |
+| sample-03 | `null` | `null` | `null` | Yes |
+| sample-04 | `null` | `3` | 310 | **No** |
+| sample-05 | `50,257` | `50,257` | 3157 | Yes |
 
-Comment on any wrong answer: why do you think it failed?
+The service gets 4 of 5 right, including `sample-05`, whose 3,171-character context needs several windows. `sample-04` fails because the question asks about BERT-base while the paragraph only gives the "3 times" GPU-memory reduction for GPT-3 175B: the model matches the pattern of the question and ignores the entity mismatch. Its no-answer evidence is only 1.06 logits below the best span, so returning `null` here would need a threshold that makes the service answer `null` too often on answerable questions (section 3).
 
 ## 6. Model size and latency (not graded)
 
@@ -92,8 +92,9 @@ Comment on any wrong answer: why do you think it failed?
 
 At least two concrete problems. For each: what happened, the cause, the fix, and the commit where it was fixed.
 
-1. **Problem:** … **Cause:** … **Fix:** … **Commit:** `abc1234`
-2. **Problem:** … **Cause:** … **Fix:** … **Commit:** `def5678`
+1. **Problem:** FastAPI's default validation error does not match the contract. **Cause:** a bad body returns 422 with `{"detail": [...]}`, but the contract requires `{"error": "bad_request"}`. **Fix:** custom exception handlers return 400 `bad_request` for invalid bodies, the contract body for HTTP errors such as 401, and 500 `internal_error` for anything else. **Commit:** `fefe1d2`
+2. **Problem:** with `QA_TEAM` unset, the model never became ready and `/health` stayed 503 with no visible reason. **Cause:** the loading thread builds the `/info` payload from `QA_TEAM`, and an exception inside a background thread does not stop the server (we reproduced it: `KeyError: 'QA_TEAM'` in the console, `/health` still 503). **Fix:** the loader logs "model failed to load" with the traceback, and the README documents the variable. **Commit:** `fefe1d2`, `4f8e70f`
+3. **Problem:** the service could feed the model different input from the one used in training. **Cause:** `train.py` strips leading whitespace from every question and the service did not; we found it by comparing the two files. **Fix:** the service calls `question.lstrip()` before tokenizing. **Commit:** `fefe1d2`
 
 ## 8. Decoder investigation
 
@@ -103,4 +104,9 @@ For each point: the problem, how the alternative architecture would handle it, a
 
 ## 9. Known limitations
 
-What your service does **not** do or handle, and what would happen if it received such input.
+- **Short extractive answers only.** The service returns one contiguous span of at most 30 tokens. Yes/no answers, computed numbers or answers spread over several sentences cannot be produced; the model returns the closest span or `null`.
+- **Weak at spotting unanswerable questions.** `sample-04` shows the typical failure: a paragraph with the right kind of fact about a different entity gets answered. Section 3 gives the accuracy on unanswerable validation questions.
+- **English only.** The base model is uncased DistilBERT; other languages give unreliable spans.
+- **Oversized questions fail.** A question that alone needs more than 384 tokens is valid for the contract (we tested 500 `!` characters) but makes the tokenizer fail, and the service answers 500 `internal_error` instead of truncating the question.
+- **Invalid input.** Bodies outside the contract (missing or extra field, context over 5000 characters, question over 500) get 400 `bad_request`; a missing or wrong token gets 401.
+- **One request at a time.** One worker and no batching, so concurrent requests would compete for the CPU. If the model cannot load, `/health` stays 503 and the reason only appears in the console.
