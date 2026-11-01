@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Team id | `team-XX` *(TODO: the id given in the course)* |
+| Team id | `Los sofas` |
 | Members | Diego Montano, Mónica Alvarenga, Mauricio Chávez, Rafael Santos |
 | Repository URL | https://github.com/monii2408/NLP-services-and-API |
 | `submission` commit hash | see the git tag submission |

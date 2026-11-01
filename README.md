@@ -55,7 +55,7 @@ The service loads the model from `models/distilbert-full/`. Download `distilbert
 
 ```bash
 export QA_API_TOKEN=...            # never write the value in a file tracked by git
-export QA_TEAM=team-XX             # team name registered with the instructor, no spaces; /info returns it
+export QA_TEAM="Los sofas"          # team name as registered with the instructor; /info returns it
 uvicorn service.app:app --host 0.0.0.0 --port 8000
 ```
 
