@@ -1,5 +1,5 @@
 # Training and inference (CPU-only serving)
-torch>=2.2
+torch>=2.6
 transformers>=5.0  # TrainingArguments(warmup_steps=<ratio>) and processing_class
 datasets>=2.18
 accelerate>=0.27
