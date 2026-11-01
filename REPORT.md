@@ -1,31 +1,20 @@
 # Project Report — Extractive QA as a Service
 
-<!--
-INSTRUCTIONS (delete this block in your submission)
-- Copy this file to the root of your repository as REPORT.md.
-- It must be committed in the commit tagged `submission`.
-- Keep every heading below, in this order. Fill every section.
-- A report with a missing or empty section counts as NOT delivered (final grade × 0.5).
-- Length: 1–2 pages of text (about 1000 words max), not counting tables and figures.
-- Language: English.
-- Write about YOUR implementation. Generic text that could describe any team's project is not acceptable.
--->
-
 ## 0. Team
 
 | Field | Value |
 |---|---|
 | Team id | `team-XX` *(TODO: the id given in the course)* |
-| Members | Diego Montaño, Mónica Alvarenga, Mauricio Chávez, Rafa *(TODO: surname)* |
+| Members | Diego Montano, Mónica Alvarenga, Mauricio Chávez, Rafael Santos |
 | Repository URL | https://github.com/monii2408/NLP-services-and-API |
-| `submission` commit hash | *(TODO: fill in after tagging `submission`)* |
-| Public service URL used at the dry run | *(TODO: Rafa, after the dry run)* |
-| AI tools used (which, and for what) | Claude Code (Anthropic): implementation of the FastAPI service, `evaluation/evaluate_model.py` and the threshold sweep, and a first draft of this report, all reviewed by the team. *(TODO: each member adds the tools they used.)* |
-
+| `submission` commit hash | see the git tag submission |
+| Public service URL used at the dry run | https://sweat-omnivore-manpower.ngrok-free.dev |
+| AI tools used (which, and for what) | Claude Code (Anthropic): implementation of the FastAPI service, `evaluation/evaluate_model.py` and the threshold sweep, and a first draft of this report, all reviewed by the team. Claude (Anthropic, chat): deploy and tunnel setup, latency and sample-check scripts, and drafts of report sections 4, 6 and 7, reviewed by Rafael.|
+ 
 ## 1. Model choice and justification
 
 - **Base checkpoint** (exact Hugging Face id): `distilbert-base-uncased` (66,364,418 parameters), not previously fine-tuned on SQuAD; we fine-tuned it ourselves on SQuAD 2.0.
-- **Alternatives considered** (at least one) and why you did not choose them: *(TODO team: name the alternative(s) we really discussed, e.g. `bert-base-uncased`, and the reason.)*
+- **Alternatives considered** (at least one) and why you did not choose them: bert-base-uncased
 - **Trade-off:** DistilBERT has about 40% fewer parameters than BERT-base, so the 254 MB model loads in about 4 s and runs on CPU in fp32 without a GPU. We accept a lower F1 (67.7 on SQuAD 2.0 dev, section 2) in exchange for a service that fits a laptop.
 
 ## 2. Training
@@ -67,13 +56,14 @@ A threshold that is too low discards correct answers: at -8 the service says `nu
 
 ## 4. Serving architecture
 
-Framework and server: FastAPI served by uvicorn, a single worker (one process holds one copy of the model). Port 8000, bound to 127.0.0.1.
-Model loading: service/app.py starts a background thread at application startup that loads the tokenizer and the model from models/distilbert-full/ (QA_MODEL_DIR overrides the path) and reads metadata.json (base model id, max_seq_length, doc_stride). The model object is assigned last, so /health answers 503 {"status":"loading"} until everything is ready and then 200 {"status":"ok"}. If loading fails, /health stays at 503 and the error is printed to the console.
-Request flow: /predict validates the body with a pydantic model (id, context, question, extra fields rejected, length limits from the contract). The question and context are tokenized together into windows of 384 tokens with a stride of 128 (truncation="only_second"), so long contexts (up to 5000 characters) become several windows. Each window goes through DistilBERT on CPU. The best span is the context-token pair with the highest start+end logit (at most 30 tokens long) across all windows. The no-answer score is the minimum, over windows, of the [CLS] start+end logits. The service returns null when null_score - best_span_score > 2.0 (QA_NULL_THRESHOLD). The answer text is sliced from the original context using the tokenizer's character offsets, so context[start:start+len(answer)] == answer always holds.
-Access control: a FastAPI dependency (require_token) protects /info and /predict. It compares the Authorization header with Bearer <QA_API_TOKEN> using secrets.compare_digest. The token value comes only from the environment variable QA_API_TOKEN; if it is unset, every request is rejected. Failures return 401 {"error":"unauthorized"} with WWW-Authenticate: Bearer. /health is public. Validation errors return 400 bad_request and unhandled exceptions return 500 internal_error, always in the {"error", "detail"} format.
-Tunnel: ngrok (main): <exact command you run, e.g. ngrok http --url=sweat-omnivore-manpower.ngrok-free.dev 127.0.0.1:8000>. Backup: Cloudflare Quick Tunnel, cloudflared tunnel --url http://127.0.0.1:8000. Both point to 127.0.0.1, not localhost (see Section 7, problem 1).
-How to run from a clean machine (Windows PowerShell):
-powershell
+- **Framework and server:** FastAPI served by uvicorn, a single worker (one process holds one copy of the model). Port 8000, bound to `127.0.0.1`.
+- **Model loading:** `service/app.py` starts a background thread at application startup that loads the tokenizer and the model from `models/distilbert-full/` (`QA_MODEL_DIR` overrides the path) and reads `metadata.json` (base model id, `max_seq_length`, `doc_stride`). The model object is assigned last, so `/health` answers `503 {"status":"loading"}` until everything is ready and then `200 {"status":"ok"}`. If loading fails, `/health` stays at 503 and the error is printed to the console.
+- **Request flow:** `/predict` validates the body with a pydantic model (`id`, `context`, `question`, extra fields rejected, length limits from the contract). The question and context are tokenized together into windows of 384 tokens with a stride of 128 (`truncation="only_second"`), so long contexts (up to 5000 characters) become several windows. Each window goes through DistilBERT on CPU. The best span is the context-token pair with the highest start+end logit (at most 30 tokens long) across all windows. The no-answer score is the minimum, over windows, of the `[CLS]` start+end logits. The service returns `null` when `null_score - best_span_score > 2.0` (`QA_NULL_THRESHOLD`). The answer text is sliced from the original context using the tokenizer's character offsets, so `context[start:start+len(answer)] == answer` always holds.
+- **Access control:** a FastAPI dependency (`require_token`) protects `/info` and `/predict`. It compares the `Authorization` header with `Bearer <QA_API_TOKEN>` using `secrets.compare_digest`. The token value comes only from the environment variable `QA_API_TOKEN`; if it is unset, every request is rejected. Failures return `401 {"error":"unauthorized"}` with `WWW-Authenticate: Bearer`. `/health` is public. Validation errors return 400 `bad_request` and unhandled exceptions return 500 `internal_error`, always in the `{"error", "detail"}` format.
+- **Tunnel:** ngrok (main): `ngrok http --url=sweat-omnivore-manpower.ngrok-free.dev 127.0.0.1:8000`. Backup: Cloudflare Quick Tunnel, `cloudflared tunnel --url http://127.0.0.1:8000`. Both point to `127.0.0.1`, not `localhost` (see Section 7, problem 1).
+- **How to run** from a clean machine (Windows PowerShell):
+
+```powershell
 git clone https://github.com/monii2408/NLP-services-and-API
 cd NLP-services-and-API
 python -m venv .venv
@@ -99,21 +89,22 @@ ngrok http 127.0.0.1:8000
 
 The service gets 4 of 5 right, including `sample-05`, whose 3,171-character context needs several windows. `sample-04` fails because the question asks about BERT-base while the paragraph only gives the "3 times" GPU-memory reduction for GPT-3 175B: the model matches the pattern of the question and ignores the entity mismatch. Its no-answer evidence is only 1.06 logits below the best span, so returning `null` here would need a threshold that makes the service answer `null` too often on answerable questions (section 3).
 
+
 ## 6. Model size and latency (not graded)
 
 | Item | Value |
 |---|---|
 | Parameters | 66,364,418 |
-| Size on disk | 254 MB (`models/distilbert-full/`) |
-| Mean latency per `/predict` request on your laptop (CPU) | 118 ms mean, 58 ms median, 398 ms max (5 public samples × 10 requests after one warm-up, over `127.0.0.1`); about 60-100 ms for the four short samples and 305 ms for `sample-05`, which needs several windows |
-| Laptop CPU and RAM | AMD Ryzen 5 8645HS (6 cores, 12 threads), 23.3 GB RAM |
+| Size on disk | 254 MiB (266 MB), `models/distilbert-full/` |
+| Mean latency per `/predict` request on your laptop (CPU) | 0.22 s mean over `127.0.0.1` (p50 0.08 s, p95 0.66 s, max 0.68 s); 0.70 s through the ngrok tunnel (p50 0.58 s, p95 1.08 s, max 1.16 s). 30 requests per URL: the 5 public samples plus one synthetic 5000-character context. Estimated 35 s for 50 items through the tunnel (cap: 150 s). |
+| Laptop CPU and RAM | Intel Core i7-11800H (8 cores, 16 threads), 31.7 GB RAM |
 
 ## 7. Problems encountered and how you fixed them
 
-Problem: every request took about 2.1 s locally, regardless of context length. Cause: on Windows, localhost resolved to IPv6 (::1) first; uvicorn listens only on 127.0.0.1, so each connection waited about 2 s before falling back to IPv4. Fix: use 127.0.0.1 in clients and in the tunnel command; mean latency dropped from 2.16 s to 0.16 s. Commit: <ac636c8>
-Problem: the service started but /health stayed at 503. Cause: transformers>=5.0 needs PyTorch 2.6 or newer, and requirements.txt allowed torch>=2.2 (the laptop had 2.5.1), so AutoModelForQuestionAnswering could not be imported. Fix: require torch>=2.6 and install the CPU build. Commit: <90847de>
-Problem: after upgrading torch, the model import failed with operator torchvision::nms does not exist. Cause: an old torchvision build, not matching the new torch, was imported by transformers. The service does not use it. Fix: uninstall torchvision and torchaudio. Commit: < none (operational fix: uninstalled torchvision and torchaudio)>
-Problem: the ngrok URL answered but not with our service. Cause: ngrok http was started without a port and forwarded to localhost:80. Fix: start it with the explicit target 127.0.0.1:8000 and check that the Forwarding line ends in 127.0.0.1:8000. Commit: <none (operational fix: restarted ngrok with the explicit target 127.0.0.1:8000)">
+1. **Problem:** every request took about 2.1 s locally, regardless of context length. **Cause:** on Windows, `localhost` resolved to IPv6 (`::1`) first; uvicorn listens only on `127.0.0.1`, so each connection waited about 2 s before falling back to IPv4. **Fix:** use `127.0.0.1` in clients and in the tunnel command; mean latency dropped from 2.16 s to about 0.2 s. **Commit:** `ac636c8`
+2. **Problem:** the service started but `/health` stayed at 503. **Cause:** `transformers>=5.0` needs PyTorch 2.6 or newer, and `requirements.txt` allowed `torch>=2.2` (the laptop had 2.5.1), so `AutoModelForQuestionAnswering` could not be imported. **Fix:** require `torch>=2.6` and install the CPU build. **Commit:** `90847de`
+3. **Problem:** after upgrading torch, the model import failed with `operator torchvision::nms does not exist`. **Cause:** an old `torchvision` build, not matching the new torch, was imported by `transformers`. The service does not use it. **Fix:** uninstall `torchvision` and `torchaudio`. **Commit:** none (operational fix: uninstalled `torchvision` and `torchaudio`)
+4. **Problem:** the ngrok URL answered but not with our service. **Cause:** `ngrok http` was started without a port and forwarded to `localhost:80`. **Fix:** start it with the explicit target `127.0.0.1:8000` and check that the `Forwarding` line ends in `127.0.0.1:8000`. **Commit:** none (operational fix: restarted ngrok with the explicit target `127.0.0.1:8000`)
 
 ## 8. Decoder investigation
 
