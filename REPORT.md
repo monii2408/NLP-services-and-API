@@ -9,13 +9,13 @@
 | Repository URL | https://github.com/monii2408/NLP-services-and-API |
 | `submission` commit hash | see the git tag submission |
 | Public service URL used at the dry run | https://sweat-omnivore-manpower.ngrok-free.dev |
-| AI tools used (which, and for what) | Claude Code (Anthropic): implementation of the FastAPI service, `evaluation/evaluate_model.py` and the threshold sweep, and a first draft of this report, all reviewed by the team. Claude (Anthropic, chat): deploy and tunnel setup, latency and sample-check scripts, and drafts of report sections 4, 6 and 7, reviewed by Rafael.|
- 
+| AI tools used (which, and for what) | Claude Code (Anthropic): implementation of the FastAPI service, `evaluation/evaluate_model.py` and the threshold sweep, and a first draft of this report, all reviewed by the team. Claude (Anthropic, chat): deploy and tunnel setup, latency and sample-check scripts, and drafts of report sections 4, 6 and 7, reviewed by Rafael. |
+
 ## 1. Model choice and justification
 
 - **Base checkpoint** (exact Hugging Face id): `distilbert-base-uncased` (66,364,418 parameters), not previously fine-tuned on SQuAD; we fine-tuned it ourselves on SQuAD 2.0.
-- **Alternatives considered** (at least one) and why you did not choose them: `bert-base-uncased` (about 110M parameters). It usually scores a few F1 points higher on SQuAD 2.0, but it has about 1.7 times the parameters and CPU compute per window than DistilBERT. With CPU-only serving on a laptop, a 5 s limit per request and a 150 s cap for 50 items, we chose the smaller model; the measured latency (0.7 s per request through the tunnel) leaves a wide margin.
-- **Trade-off:** DistilBERT has about 40% fewer parameters than BERT-base, so the 254 MiB model loads in about 4 s and runs on CPU in fp32 without a GPU. We accept a lower F1 (67.7 on SQuAD 2.0 dev, section 2) in exchange for a service that fits a laptop.
+- **Alternatives considered** (at least one) and why you did not choose them: `bert-base-uncased` (about 110M parameters) usually scores a few F1 points higher, but needs about 1.7 times the CPU compute per window. With CPU-only serving, a 5 s limit per request and a 150 s cap for 50 items, we chose the smaller model.
+- **Trade-off:** the 254 MiB model loads in about 4 s and runs in fp32 on a laptop CPU, at 0.7 s per request through the tunnel (section 6). We accept a lower F1 (67.7 on SQuAD 2.0 dev) for a service that fits a laptop.
 
 ## 2. Training
 
@@ -40,27 +40,25 @@
 
 ## 3. No-answer threshold
 
-- **Decision rule.** For every question the service finds the best span (highest `start_logit + end_logit` inside the context) over all windows, and takes the no-answer score from the `[CLS]` token (`null_logit = start_logit[CLS] + end_logit[CLS]`, best window). It returns `null` when `null_logit - best_span_logit > threshold`; a higher threshold makes the service answer more often.
-- **How we chose it.** `evaluation/evaluate_model.py` runs the model once over the full SQuAD 2.0 validation set (11,873 questions) with the same scoring code as the service, stores the gap `null_logit - best_span_logit` of each question and scores 321 thresholds from -8 to 8 in steps of 0.05 ([`evaluation/threshold_sweep.json`](evaluation/threshold_sweep.json)). Validation has about 50% unanswerable questions, but the hidden test set has about 25%, so we select by a weighted F1 that counts unanswerable questions with weight 0.25. The sweep peaks at 2.5 (weighted F1 71.29, plateau 2.45-2.8); the service runs with **2.0** (`QA_NULL_THRESHOLD`, default in `service/app.py`), whose weighted F1 is 71.03, 0.25 points lower. Threshold 0 gives 69.60.
-- **Too low or too high** (validation, from the sweep):
+- **Rule.** The service takes the best span over all windows and the smallest `[CLS]` score (`null_logit`) over windows. It returns `null` when `null_logit - best_span_logit > threshold`; a higher threshold means more answers.
+- **Choice.** `evaluation/evaluate_model.py` runs the model once on the 11,873 validation questions with the service's own scoring code and scores 321 thresholds from -8 to 8 ([`evaluation/threshold_sweep.json`](evaluation/threshold_sweep.json)). Validation is about 50% unanswerable but the hidden test set about 25%, so we select by an F1 that weights unanswerable questions by 0.25. The sweep peaks at 2.5 (weighted F1 71.29); the service uses **2.0** (`QA_NULL_THRESHOLD`), 0.25 points lower (71.03).
+- **Too low or too high:** a low threshold discards correct answers (at -8, `null` for four of five answerable questions); a high one answers everything, so unanswerable questions are missed (at 4 only 39.5% are detected). `sample-04` stays wrong because its gap is -1.06; returning `null` there needs a threshold below -1.06, which costs about 8 points of answerable EM.
 
 | Threshold | Answerable EM | Unanswerable accuracy | Weighted F1 |
 |---|---|---|---|
-| -8 (almost always `null`) | 19.7 | 93.8 | 39.3 |
+| -8 | 19.7 | 93.8 | 39.3 |
 | 0 | 64.6 | 64.5 | 69.6 |
 | **2.0 (service)** | 69.9 | 51.6 | 71.0 |
 | 2.5 (sweep optimum) | 70.8 | 49.0 | 71.3 |
 | 4 | 72.9 | 39.5 | 70.8 |
 
-A threshold that is too low discards correct answers: at -8 the service says `null` for four of five answerable questions. A threshold that is too high answers every question, so unanswerable questions are wrong (at 4 only 39.5% are detected). This is also why `sample-04` stays wrong: its gap is -1.06, and only a threshold below -1.06 would return `null`, which costs about 8 points of answerable EM compared with threshold 0 (56.1 at -2).
-
 ## 4. Serving architecture
 
-- **Framework and server:** FastAPI served by uvicorn, a single worker (one process holds one copy of the model). Port 8000, bound to `127.0.0.1`.
-- **Model loading:** `service/app.py` starts a background thread at application startup that loads the tokenizer and the model from `models/distilbert-full/` (`QA_MODEL_DIR` overrides the path) and reads `metadata.json` (base model id, `max_seq_length`, `doc_stride`). The model object is assigned last, so `/health` answers `503 {"status":"loading"}` until everything is ready and then `200 {"status":"ok"}`. If loading fails, `/health` stays at 503 and the error is printed to the console.
-- **Request flow:** `/predict` validates the body with a pydantic model (`id`, `context`, `question`, extra fields rejected, length limits from the contract). The question and context are tokenized together into windows of 384 tokens with a stride of 128 (`truncation="only_second"`), so long contexts (up to 5000 characters) become several windows. Each window goes through DistilBERT on CPU. The best span is the context-token pair with the highest start+end logit (at most 30 tokens long) across all windows. The no-answer score is the minimum, over windows, of the `[CLS]` start+end logits. The service returns `null` when `null_score - best_span_score > 2.0` (`QA_NULL_THRESHOLD`). The answer text is sliced from the original context using the tokenizer's character offsets, so `context[start:start+len(answer)] == answer` always holds.
-- **Access control:** a FastAPI dependency (`require_token`) protects `/info` and `/predict`. It compares the `Authorization` header with `Bearer <QA_API_TOKEN>` using `secrets.compare_digest`. The token value comes only from the environment variable `QA_API_TOKEN`; if it is unset, every request is rejected. Failures return `401 {"error":"unauthorized"}` with `WWW-Authenticate: Bearer`. `/health` is public. Validation errors return 400 `bad_request` and unhandled exceptions return 500 `internal_error`, always in the `{"error", "detail"}` format.
-- **Tunnel:** ngrok (main): `ngrok http --url=sweat-omnivore-manpower.ngrok-free.dev 127.0.0.1:8000`. Backup: Cloudflare Quick Tunnel, `cloudflared tunnel --url http://127.0.0.1:8000`. Both point to `127.0.0.1`, not `localhost` (see Section 7, problem 1).  Dry-run screenshots (tests 1–4 of the brief, through the public ngrok URL, with a test token): `deploy/dry_run/`.
+- **Framework and server:** FastAPI on uvicorn, one worker, port 8000, bound to `127.0.0.1`.
+- **Model loading:** a background thread started at application startup loads the tokenizer, the model from `models/distilbert-full/` and `metadata.json`. The model is assigned last, so `/health` answers 503 `{"status":"loading"}` until ready and then 200. If loading fails, `/health` stays 503 and the error is printed to the console.
+- **Request flow:** pydantic validates the body (extra fields rejected, contract length limits). Question and context are tokenized into 384-token windows with stride 128, so long contexts become several windows. The best span is the token pair with the highest start+end logit (at most 30 tokens) over all windows, and the answer is sliced from the original context with the tokenizer's offsets, so it is always a verbatim span at `start`.
+- **Access control:** a dependency on `/info` and `/predict` compares the `Authorization` header with `Bearer <QA_API_TOKEN>` using `secrets.compare_digest`. The token comes only from the environment; if unset, every request is rejected with 401 `{"error":"unauthorized"}`. `/health` is public. Invalid bodies give 400 `bad_request`, other failures 500 `internal_error`.
+- **Tunnel:** ngrok, `ngrok http --url=sweat-omnivore-manpower.ngrok-free.dev 127.0.0.1:8000`; backup Cloudflare Quick Tunnel, `cloudflared tunnel --url http://127.0.0.1:8000`. Both use `127.0.0.1`, not `localhost` (section 7, problem 1). Dry-run screenshots of tests 1-4 through the public URL are in `deploy/dry_run/`.
 - **How to run** from a clean machine (Windows PowerShell):
 
 ```powershell
@@ -71,7 +69,7 @@ python -m venv .venv
 pip install -r requirements.txt
 # download distilbert-squad2-full.zip from the model-v1 release and unzip it into models/
 $env:QA_API_TOKEN = "<token>"
-$env:QA_TEAM = "<team-id>"
+$env:QA_TEAM = "Los sofas"
 uvicorn service.app:app --host 127.0.0.1 --port 8000
 # in another terminal
 ngrok http 127.0.0.1:8000
@@ -87,8 +85,7 @@ ngrok http 127.0.0.1:8000
 | sample-04 | `null` | `3` | 310 | **No** |
 | sample-05 | `50,257` | `50,257` | 3157 | Yes |
 
-The service gets 4 of 5 right, including `sample-05`, whose 3,171-character context needs several windows. `sample-04` fails because the question asks about BERT-base while the paragraph only gives the "3 times" GPU-memory reduction for GPT-3 175B: the model matches the pattern of the question and ignores the entity mismatch. Its no-answer evidence is only 1.06 logits below the best span, so returning `null` here would need a threshold that makes the service answer `null` too often on answerable questions (section 3).
-
+The service gets 4 of 5 right, including `sample-05`, whose 3,171-character context needs several windows. `sample-04` asks about BERT-base, but the paragraph gives the "3 times" memory reduction for GPT-3 175B: the model matches the question's pattern and ignores the entity mismatch. Its no-answer evidence is only 1.06 logits below the best span (section 3).
 
 ## 6. Model size and latency (not graded)
 
@@ -101,26 +98,21 @@ The service gets 4 of 5 right, including `sample-05`, whose 3,171-character cont
 
 ## 7. Problems encountered and how you fixed them
 
-1. **Problem:** every request took about 2.1 s locally, regardless of context length. **Cause:** on Windows, `localhost` resolved to IPv6 (`::1`) first; uvicorn listens only on `127.0.0.1`, so each connection waited about 2 s before falling back to IPv4. **Fix:** use `127.0.0.1` in clients and in the tunnel command; mean latency dropped from 2.16 s to about 0.2 s. **Commit:** `ac636c8`
-2. **Problem:** the service started but `/health` stayed at 503. **Cause:** `transformers>=5.0` needs PyTorch 2.6 or newer, and `requirements.txt` allowed `torch>=2.2` (the laptop had 2.5.1), so `AutoModelForQuestionAnswering` could not be imported. **Fix:** require `torch>=2.6` and install the CPU build. **Commit:** `90847de`
-3. **Problem:** after upgrading torch, the model import failed with `operator torchvision::nms does not exist`. **Cause:** an old `torchvision` build, not matching the new torch, was imported by `transformers`. The service does not use it. **Fix:** uninstall `torchvision` and `torchaudio`. **Commit:** none (operational fix: uninstalled `torchvision` and `torchaudio`)
-4. **Problem:** the ngrok URL answered but not with our service. **Cause:** `ngrok http` was started without a port and forwarded to `localhost:80`. **Fix:** start it with the explicit target `127.0.0.1:8000` and check that the `Forwarding` line ends in `127.0.0.1:8000`. **Commit:** none (operational fix: restarted ngrok with the explicit target `127.0.0.1:8000`)
+1. **Problem:** every request took about 2.1 s locally. **Cause:** on Windows `localhost` resolves to IPv6 first and uvicorn listens only on `127.0.0.1`, so each connection waited about 2 s. **Fix:** use `127.0.0.1` in clients and in the tunnel command; mean latency fell from 2.16 s to about 0.2 s. **Commit:** `ac636c8`
+2. **Problem:** `/health` stayed 503. **Cause:** `transformers>=5.0` needs PyTorch 2.6 or newer, but `requirements.txt` allowed `torch>=2.2`, so the model could not be imported. **Fix:** require `torch>=2.6`. **Commit:** `90847de`
+3. **Problem:** after the upgrade the import failed with `operator torchvision::nms does not exist`. **Cause:** an old `torchvision` not matching the new torch. **Fix:** uninstall `torchvision` and `torchaudio`, which the service does not use. **Commit:** none (environment fix)
+4. **Problem:** the ngrok URL answered, but not with our service. **Cause:** `ngrok http` was started without a port and forwarded to `localhost:80`. **Fix:** start it with the explicit target `127.0.0.1:8000`. **Commit:** none (operational fix)
 
 ## 8. Decoder investigation
 
-How could a decoder (GPT-style) or an encoder–decoder architecture address specific problems **your team** encountered (Section 7 or Section 5)? Examples: answers that are not a contiguous span, yes/no questions, long contexts.
-
-For each point: the problem, how the alternative architecture would handle it, and what it would cost (latency, model size, evaluation).
-
-1. **Unanswerable questions with a similar-looking fact (`sample-04`).** Our encoder scores spans independently of the question's entity, so it returned `3` for BERT-base when the paragraph only describes GPT-3 175B. An encoder–decoder (e.g. T5) or a decoder (GPT-style) reads the question and the context in one generation pass and can output "unanswerable" as text, which lets it compare the entities instead of thresholding a logit difference. **Cost:** a model several times larger than our 66M-parameter DistilBERT, slower CPU generation token by token, and a risk of invented answers, so we would have to check that each answer is a substring of the context.
-2. **Answers that are not one contiguous span (section 9).** Our service can only return one span of at most 30 tokens, so a yes/no answer or an answer built from two sentences is impossible. A generative model can write the answer freely. **Cost:** the contract requires `start` as a character offset into the context; a free-text answer has no reliable offset, so we would need an extra step to find the text in the context, and EM/F1 would no longer measure exactly what the model is asked to do.
-3. **Long contexts (`sample-05`, 3,171 characters).** We split the context into 384-token windows with a 128-token overlap and keep the best-scoring span, so the model never sees the whole paragraph at once. A long-context decoder reads it in one pass and can use evidence from distant sentences. **Cost:** attention memory and latency grow with the context length, which is hard to afford on a CPU-only laptop, and for contexts of at most 5000 characters our windowed encoder already answers `sample-05` correctly.
+1. **Unanswerable questions with a similar fact (`sample-04`).** Our encoder returned `3` for BERT-base although the paragraph only describes GPT-3 175B. An encoder–decoder (T5) or decoder reads question and context together and can generate "unanswerable" by comparing the entities, instead of thresholding a logit gap. **Cost:** a model several times larger than our 66M parameters, slower token-by-token CPU generation, and invented answers, so each answer must be checked as a substring of the context.
+2. **Answers that are not one span (section 9).** Our service returns one span of at most 30 tokens, so yes/no answers or answers built from two sentences are impossible. A generative model can write them freely. **Cost:** the contract needs `start` as a character offset, so free text needs an extra matching step, and EM/F1 no longer measure the same thing.
+3. **Long contexts (`sample-05`, 3,171 characters).** Windows of 384 tokens mean the model never sees the whole paragraph at once; a long-context decoder would. **Cost:** attention memory and latency grow with context length, hard on a CPU-only laptop, and our windows already answer `sample-05` correctly.
 
 ## 9. Known limitations
 
-- **Short extractive answers only.** The service returns one contiguous span of at most 30 tokens. Yes/no answers, computed numbers or answers spread over several sentences cannot be produced; the model returns the closest span or `null`.
-- **Weak at spotting unanswerable questions.** `sample-04` shows the typical failure: a paragraph with the right kind of fact about a different entity gets answered. Section 3 gives the accuracy on unanswerable validation questions.
-- **English only.** The base model is uncased DistilBERT; other languages give unreliable spans.
-- **Oversized questions fail.** A question that alone needs more than 384 tokens is valid for the contract (we tested 500 `!` characters) but makes the tokenizer fail, and the service answers 500 `internal_error` instead of truncating the question.
-- **Invalid input.** Bodies outside the contract (missing or extra field, context over 5000 characters, question over 500) get 400 `bad_request`; a missing or wrong token gets 401.
-- **One request at a time.** One worker and no batching, so concurrent requests would compete for the CPU. If the model cannot load, `/health` stays 503 and the reason only appears in the console.
+- **Short extractive answers only:** one contiguous span of at most 30 tokens; no yes/no, computed or multi-sentence answers.
+- **Weak on unanswerable questions:** `sample-04` shows it; only 51.6% of unanswerable validation questions are detected at threshold 2.0.
+- **English only:** the base model is uncased DistilBERT.
+- **Oversized questions fail:** a question that alone needs more than 384 tokens is valid for the contract (we tested 500 `!` characters) but the tokenizer fails and the service answers 500 `internal_error`.
+- **One request at a time:** one worker and no batching. If the model cannot load, `/health` stays 503 and the reason only appears in the console.
