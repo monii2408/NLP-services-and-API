@@ -110,10 +110,10 @@ The service gets 4 of 5 right, including `sample-05`, whose 3,171-character cont
 
 ## 7. Problems encountered and how you fixed them
 
-Problem: every request took about 2.1 s locally, regardless of context length. Cause: on Windows, localhost resolved to IPv6 (::1) first; uvicorn listens only on 127.0.0.1, so each connection waited about 2 s before falling back to IPv4. Fix: use 127.0.0.1 in clients and in the tunnel command; mean latency dropped from 2.16 s to 0.16 s. Commit: <hash>
-Problem: the service started but /health stayed at 503. Cause: transformers>=5.0 needs PyTorch 2.6 or newer, and requirements.txt allowed torch>=2.2 (the laptop had 2.5.1), so AutoModelForQuestionAnswering could not be imported. Fix: require torch>=2.6 and install the CPU build. Commit: <hash>
-Problem: after upgrading torch, the model import failed with operator torchvision::nms does not exist. Cause: an old torchvision build, not matching the new torch, was imported by transformers. The service does not use it. Fix: uninstall torchvision and torchaudio. Commit: <hash>
-Problem: the ngrok URL answered but not with our service. Cause: ngrok http was started without a port and forwarded to localhost:80. Fix: start it with the explicit target 127.0.0.1:8000 and check that the Forwarding line ends in 127.0.0.1:8000. Commit: <hash or "operational, no code change">
+Problem: every request took about 2.1 s locally, regardless of context length. Cause: on Windows, localhost resolved to IPv6 (::1) first; uvicorn listens only on 127.0.0.1, so each connection waited about 2 s before falling back to IPv4. Fix: use 127.0.0.1 in clients and in the tunnel command; mean latency dropped from 2.16 s to 0.16 s. Commit: <ac636c8>
+Problem: the service started but /health stayed at 503. Cause: transformers>=5.0 needs PyTorch 2.6 or newer, and requirements.txt allowed torch>=2.2 (the laptop had 2.5.1), so AutoModelForQuestionAnswering could not be imported. Fix: require torch>=2.6 and install the CPU build. Commit: <90847de>
+Problem: after upgrading torch, the model import failed with operator torchvision::nms does not exist. Cause: an old torchvision build, not matching the new torch, was imported by transformers. The service does not use it. Fix: uninstall torchvision and torchaudio. Commit: < none (operational fix: uninstalled torchvision and torchaudio)>
+Problem: the ngrok URL answered but not with our service. Cause: ngrok http was started without a port and forwarded to localhost:80. Fix: start it with the explicit target 127.0.0.1:8000 and check that the Forwarding line ends in 127.0.0.1:8000. Commit: <none (operational fix: restarted ngrok with the explicit target 127.0.0.1:8000)">
 
 ## 8. Decoder investigation
 
