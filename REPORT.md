@@ -67,20 +67,24 @@ A threshold that is too low discards correct answers: at -8 the service says `nu
 
 ## 4. Serving architecture
 
-- **Framework and server:** FastAPI on uvicorn, one worker process. The model is loaded once in that process; `/predict` is a synchronous function that FastAPI runs in its thread pool, on CPU in fp32.
-- **Model loading:** a background thread started by FastAPI's lifespan hook loads the tokenizer and the model from `models/distilbert-full/`. The model is assigned last, so `/health` answers 503 `{"status": "loading"}` until it is ready (about 4 s on the development laptop) and 200 afterwards.
-- **Request flow:** Pydantic validates the body (`id` 1-64, `context` 1-5000 and `question` 1-500 characters, no extra fields; otherwise 400 `bad_request`). The question and the context are tokenized into windows of at most 384 tokens with a 128-token overlap, so a long context becomes several windows. In every window we scan the start/end pairs of up to 30 context tokens and keep the best `start_logit + end_logit`. The tokenizer's character offsets give `start` and `answer = context[start:end]`, so the answer is always a verbatim span at the reported offset. If the no-answer evidence beats the best span by more than the threshold (section 3), the answer is `null`.
-- **Access control:** a dependency on `/info` and `/predict` reads `QA_API_TOKEN` from the environment and compares the whole `Authorization` header with `Bearer <token>` using `secrets.compare_digest`. A missing, wrong or unset token gives 401 `{"error": "unauthorized"}`; `/health` stays public. The token is never in code or in git.
-- **Tunnel:** *(Rafa: tool and exact command.)*
-- **How to run** from a clean machine (commands and environment variables):
-
-```bash
-python -m venv .venv && source .venv/bin/activate    # Windows PowerShell: .venv\Scripts\Activate.ps1
+Framework and server: FastAPI served by uvicorn, a single worker (one process holds one copy of the model). Port 8000, bound to 127.0.0.1.
+Model loading: service/app.py starts a background thread at application startup that loads the tokenizer and the model from models/distilbert-full/ (QA_MODEL_DIR overrides the path) and reads metadata.json (base model id, max_seq_length, doc_stride). The model object is assigned last, so /health answers 503 {"status":"loading"} until everything is ready and then 200 {"status":"ok"}. If loading fails, /health stays at 503 and the error is printed to the console.
+Request flow: /predict validates the body with a pydantic model (id, context, question, extra fields rejected, length limits from the contract). The question and context are tokenized together into windows of 384 tokens with a stride of 128 (truncation="only_second"), so long contexts (up to 5000 characters) become several windows. Each window goes through DistilBERT on CPU. The best span is the context-token pair with the highest start+end logit (at most 30 tokens long) across all windows. The no-answer score is the minimum, over windows, of the [CLS] start+end logits. The service returns null when null_score - best_span_score > 2.0 (QA_NULL_THRESHOLD). The answer text is sliced from the original context using the tokenizer's character offsets, so context[start:start+len(answer)] == answer always holds.
+Access control: a FastAPI dependency (require_token) protects /info and /predict. It compares the Authorization header with Bearer <QA_API_TOKEN> using secrets.compare_digest. The token value comes only from the environment variable QA_API_TOKEN; if it is unset, every request is rejected. Failures return 401 {"error":"unauthorized"} with WWW-Authenticate: Bearer. /health is public. Validation errors return 400 bad_request and unhandled exceptions return 500 internal_error, always in the {"error", "detail"} format.
+Tunnel: ngrok (main): <exact command you run, e.g. ngrok http --url=sweat-omnivore-manpower.ngrok-free.dev 127.0.0.1:8000>. Backup: Cloudflare Quick Tunnel, cloudflared tunnel --url http://127.0.0.1:8000. Both point to 127.0.0.1, not localhost (see Section 7, problem 1).
+How to run from a clean machine (Windows PowerShell):
+powershell
+git clone https://github.com/monii2408/NLP-services-and-API
+cd NLP-services-and-API
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 # download distilbert-squad2-full.zip from the model-v1 release and unzip it into models/
-export QA_API_TOKEN=...      # PowerShell: $env:QA_API_TOKEN = "..."
-export QA_TEAM=team-XX
-uvicorn service.app:app --host 0.0.0.0 --port 8000
+$env:QA_API_TOKEN = "<token>"
+$env:QA_TEAM = "<team-id>"
+uvicorn service.app:app --host 127.0.0.1 --port 8000
+# in another terminal
+ngrok http 127.0.0.1:8000
 ```
 
 ## 5. Results on the public sample set
@@ -106,11 +110,10 @@ The service gets 4 of 5 right, including `sample-05`, whose 3,171-character cont
 
 ## 7. Problems encountered and how you fixed them
 
-At least two concrete problems. For each: what happened, the cause, the fix, and the commit where it was fixed.
-
-1. **Problem:** FastAPI's default validation error does not match the contract. **Cause:** a bad body returns 422 with `{"detail": [...]}`, but the contract requires `{"error": "bad_request"}`. **Fix:** custom exception handlers return 400 `bad_request` for invalid bodies, the contract body for HTTP errors such as 401, and 500 `internal_error` for anything else. **Commit:** `fefe1d2`
-2. **Problem:** with `QA_TEAM` unset, the model never became ready and `/health` stayed 503 with no visible reason. **Cause:** the loading thread builds the `/info` payload from `QA_TEAM`, and an exception inside a background thread does not stop the server (we reproduced it: `KeyError: 'QA_TEAM'` in the console, `/health` still 503). **Fix:** the loader logs "model failed to load" with the traceback, and the README documents the variable. **Commit:** `fefe1d2`, `4f8e70f`
-3. **Problem:** the service could feed the model different input from the one used in training. **Cause:** `train.py` strips leading whitespace from every question and the service did not; we found it by comparing the two files. **Fix:** the service calls `question.lstrip()` before tokenizing. **Commit:** `fefe1d2`
+Problem: every request took about 2.1 s locally, regardless of context length. Cause: on Windows, localhost resolved to IPv6 (::1) first; uvicorn listens only on 127.0.0.1, so each connection waited about 2 s before falling back to IPv4. Fix: use 127.0.0.1 in clients and in the tunnel command; mean latency dropped from 2.16 s to 0.16 s. Commit: <hash>
+Problem: the service started but /health stayed at 503. Cause: transformers>=5.0 needs PyTorch 2.6 or newer, and requirements.txt allowed torch>=2.2 (the laptop had 2.5.1), so AutoModelForQuestionAnswering could not be imported. Fix: require torch>=2.6 and install the CPU build. Commit: <hash>
+Problem: after upgrading torch, the model import failed with operator torchvision::nms does not exist. Cause: an old torchvision build, not matching the new torch, was imported by transformers. The service does not use it. Fix: uninstall torchvision and torchaudio. Commit: <hash>
+Problem: the ngrok URL answered but not with our service. Cause: ngrok http was started without a port and forwarded to localhost:80. Fix: start it with the explicit target 127.0.0.1:8000 and check that the Forwarding line ends in 127.0.0.1:8000. Commit: <hash or "operational, no code change">
 
 ## 8. Decoder investigation
 
