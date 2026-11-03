@@ -7,7 +7,7 @@ Run the service (Windows PowerShell)
 powershell
 .venv\Scripts\Activate.ps1
 $env:QA_API_TOKEN = "<token>"      # development token now, presentation-day token later
-$env:QA_TEAM = "Los sofas"         # team name as registered with the instructor
+$env:QA_TEAM = "Los-sofas"         # team name as registered with the instructor
 uvicorn service.app:app --host 127.0.0.1 --port 8000
 
 The weights are not in git: download distilbert-squad2-full.zip from the model-v1 release and unzip it into models/ so that models/distilbert-full/ exists. Wait until curl.exe -i http://127.0.0.1:8000/health returns 200.
